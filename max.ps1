@@ -1,16 +1,18 @@
-﻿Write-Host "===== CLEANER MAX =====" -ForegroundColor Cyan
+$Host.UI.RawUI.WindowTitle = "CLEANER MAX"
+
+Write-Host "===== CLEANER MAX =====" -ForegroundColor Cyan
 
 $select = Read-Host "Select Mode (1=MAX / 2=SAFE)"
 
 # ================================
-# MAX CLEAN (ลบครบ)
+# MAX CLEAN
 # ================================
 if ($select -eq "1") {
 
     Write-Host "`n[+] MAX CLEAN START..." -ForegroundColor Green
 
     # ======================
-    # TEMP
+    # TEMP FILES
     # ======================
     Remove-Item "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
     Remove-Item "C:\Windows\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
@@ -26,24 +28,22 @@ if ($select -eq "1") {
     Remove-Item "$env:APPDATA\Microsoft\Windows\Recent\*" -Force -ErrorAction SilentlyContinue
 
     # ======================
-    # THUMB CACHE
-    # ======================
-    Remove-Item "$env:LOCALAPPDATA\Microsoft\Windows\Explorer\thumbcache_*" -Force -ErrorAction SilentlyContinue
-
-    # ======================
-    # EVENT LOGS
-    # ======================
-    try {
-        wevtutil el | ForEach-Object { wevtutil cl "$_" }
-    } catch {}
-
-    # ======================
-    # 🔥 RUN HISTORY (Win+R)
+    # RUN (Win+R) HISTORY
     # ======================
     reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU" /f
 
     # ======================
-    # Typed Paths
+    # CMD HISTORY
+    # ======================
+    doskey /reinstall
+
+    # ======================
+    # PowerShell HISTORY
+    # ======================
+    Remove-Item "$env:APPDATA\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt" -Force -ErrorAction SilentlyContinue
+
+    # ======================
+    # Typed Paths (Explorer)
     # ======================
     reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\TypedPaths" /f
 
@@ -53,35 +53,23 @@ if ($select -eq "1") {
     reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\RecentDocs" /f
 
     # ======================
-    # Open/Save History
+    # Thumbnail Cache
     # ======================
-    reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\ComDlg32\OpenSavePidlMRU" /f
-    reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\ComDlg32\LastVisitedPidlMRU" /f
+    Remove-Item "$env:LOCALAPPDATA\Microsoft\Windows\Explorer\thumbcache_*" -Force -ErrorAction SilentlyContinue
 
     # ======================
-    # CMD HISTORY
-    # ======================
-    doskey /reinstall
-
-    # ======================
-    # 🔥 PowerShell HISTORY (ตามที่มึงขอ)
-    # ======================
-    del "$env:APPDATA\Microsoft\Windows\PowerShell\PSReadline\ConsoleHost_history.txt" -ErrorAction SilentlyContinue
-    type nul > "$env:APPDATA\Microsoft\Windows\PowerShell\PSReadline\ConsoleHost_history.txt"
-
-    # ======================
-    # BROWSER CACHE
+    # Browser Cache (พื้นฐาน)
     # ======================
     Remove-Item "$env:LOCALAPPDATA\Microsoft\Windows\INetCache\*" -Recurse -Force -ErrorAction SilentlyContinue
 
     # ======================
-    # รี Explorer (ให้ผลทันที)
+    # รี Explorer
     # ======================
     Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
     Start-Process explorer
 
     Write-Host "`n[✔] MAX CLEAN COMPLETE" -ForegroundColor Green
-    Write-Host "[!] Restart recommended" -ForegroundColor Yellow
+    Write-Host "[!] Recommended: Restart PC" -ForegroundColor Yellow
 }
 
 # ================================
