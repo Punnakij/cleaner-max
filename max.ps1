@@ -1,7 +1,4 @@
-﻿Clear-Host
-$Host.UI.RawUI.WindowTitle = "CLEANER MAX"
-
-Write-Host "===== CLEANER MAX =====" -ForegroundColor Cyan
+﻿Write-Host "===== CLEANER MAX =====" -ForegroundColor Cyan
 
 $select = Read-Host "Select Mode (1=MAX / 2=SAFE)"
 
