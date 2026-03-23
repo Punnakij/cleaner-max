@@ -1,82 +1,77 @@
-chcp 65001 > $null
+Write-Host " [1] FULL CLEAN (History + Trace)" -ForegroundColor Green
+Write-Host " [2] JUNK CLEAN (Temp Only)" -ForegroundColor Yellow
+Write-Host " [3] EXIT" -ForegroundColor Red
+Write-Host ""
 
-Write-Host "CLEANER MAX"
-Write-Host "1 = FULL CLEAN"
-Write-Host "2 = JUNK CLEAN"
-Write-Host "3 = EXIT"
+$select = Read-Host "Select Mode"
 
-$select = Read-Host "Select"
-
-# ======================
-# MODE 1: FULL CLEAN
-# ======================
+# ================================
+# MODE 1: FULL CLEAN (ไม่ต้องรี)
+# ================================
 if ($select -eq "1") {
 
-    # TEMP
+    Write-Host "`n[ START FULL CLEAN ]" -ForegroundColor Green
+
+    step "Cleaning TEMP..."
     Remove-Item "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
     Remove-Item "C:\Windows\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
 
-    # PREFETCH
+    step "Cleaning Prefetch..."
     Remove-Item "C:\Windows\Prefetch\*" -Recurse -Force -ErrorAction SilentlyContinue
 
-    # RECENT
+    step "Cleaning Recent..."
     Remove-Item "$env:APPDATA\Microsoft\Windows\Recent\*" -Force -ErrorAction SilentlyContinue
 
-    # RUN
+    step "Cleaning Run History..."
     reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU" /f >nul 2>&1
 
-    # CMD
+    step "Cleaning CMD History..."
     doskey /reinstall >nul 2>&1
 
-    # POWERSHELL
+    step "Cleaning PowerShell History..."
     Remove-Item "$env:APPDATA\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt" -Force -ErrorAction SilentlyContinue
 
-    # EXPLORER
+    step "Cleaning Explorer History..."
     reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\TypedPaths" /f >nul 2>&1
     reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\RecentDocs" /f >nul 2>&1
 
-    # CACHE
+    step "Cleaning Thumbnail Cache..."
     Remove-Item "$env:LOCALAPPDATA\Microsoft\Windows\Explorer\thumbcache_*" -Force -ErrorAction SilentlyContinue
-    Remove-Item "$env:LOCALAPPDATA\Microsoft\Windows\INetCache\*" -Recurse -Force -ErrorAction SilentlyContinue
 
-    # EVENT LOG
+    step "Cleaning Event Logs..."
     try { wevtutil el | ForEach-Object { wevtutil cl "$_" } } catch {}
 
-    # REFRESH
+    step "Refreshing Explorer..."
     Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
     Start-Process explorer
 
-    Write-Host "DONE"
+    Write-Host "`n[✔] FULL CLEAN COMPLETE" -ForegroundColor Green
 }
 
-# ======================
-# MODE 2: JUNK CLEAN
-# ======================
+# ================================
+# MODE 2: JUNK ONLY (ไม่ต้องรี)
+# ================================
 elseif ($select -eq "2") {
 
-    # TEMP
+    Write-Host "`n[ START JUNK CLEAN ]" -ForegroundColor Yellow
+
+    step "Cleaning TEMP..."
     Remove-Item "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
     Remove-Item "C:\Windows\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
 
-    # PREFETCH
+    step "Cleaning Prefetch..."
     Remove-Item "C:\Windows\Prefetch\*" -Recurse -Force -ErrorAction SilentlyContinue
 
-    # CACHE
+    step "Cleaning Cache..."
     Remove-Item "$env:LOCALAPPDATA\Microsoft\Windows\Explorer\thumbcache_*" -Force -ErrorAction SilentlyContinue
     Remove-Item "$env:LOCALAPPDATA\Microsoft\Windows\INetCache\*" -Recurse -Force -ErrorAction SilentlyContinue
 
-    Write-Host "DONE"
-}
-
-# ======================
-# MODE 3: EXIT
-# ======================
-elseif ($select -eq "3") {
-    exit
+    Write-Host "`n[✔] JUNK CLEAN COMPLETE" -ForegroundColor Cyan
 }
 
 else {
-    Write-Host "INVALID"
+    exit
 }
 
+Write-Host "`nDone. No restart required." -ForegroundColor Magenta
 pause
