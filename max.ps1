@@ -1,12 +1,23 @@
-Write-Host " [1] FULL CLEAN (History + Trace)" -ForegroundColor Green
-Write-Host " [2] JUNK CLEAN (Temp Only)" -ForegroundColor Yellow
-Write-Host " [3] EXIT" -ForegroundColor Red
+$Host.UI.RawUI.WindowTitle = "CLEANER MAX"
+
+function step {
+    param($msg)
+    Write-Host "[+] $msg" -ForegroundColor Cyan
+    Start-Sleep -Milliseconds 200
+}
+
+Clear-Host
+
+Write-Host "CLEANER MAX" -ForegroundColor Yellow
+Write-Host "[1] FULL CLEAN" -ForegroundColor Green
+Write-Host "[2] JUNK CLEAN" -ForegroundColor Yellow
+Write-Host "[3] EXIT" -ForegroundColor Red
 Write-Host ""
 
 $select = Read-Host "Select Mode"
 
 # ================================
-# MODE 1: FULL CLEAN (ไม่ต้องรี)
+# MODE 1: FULL CLEAN
 # ================================
 if ($select -eq "1") {
 
@@ -49,7 +60,7 @@ if ($select -eq "1") {
 }
 
 # ================================
-# MODE 2: JUNK ONLY (ไม่ต้องรี)
+# MODE 2: JUNK CLEAN
 # ================================
 elseif ($select -eq "2") {
 
@@ -69,8 +80,15 @@ elseif ($select -eq "2") {
     Write-Host "`n[✔] JUNK CLEAN COMPLETE" -ForegroundColor Cyan
 }
 
-else {
+# ================================
+# EXIT
+# ================================
+elseif ($select -eq "3") {
     exit
+}
+
+else {
+    Write-Host "INVALID" -ForegroundColor Red
 }
 
 Write-Host "`nDone. No restart required." -ForegroundColor Magenta
