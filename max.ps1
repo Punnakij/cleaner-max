@@ -1,28 +1,56 @@
 $Host.UI.RawUI.WindowTitle = "CLEANER MAX"
 
 Write-Host "===== CLEANER MAX =====" -ForegroundColor Cyan
+Write-Host "[+] Cleaning All History..." -ForegroundColor Green
 
-$select = Read-Host "Select Mode (1=MAX / 2=SAFE)"
+# ======================
+# TEMP FILES
+# ======================
+Remove-Item "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item "C:\Windows\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
 
-if ($select -eq "1") {
+# ======================
+# PREFETCH
+# ======================
+Remove-Item "C:\Windows\Prefetch\*" -Recurse -Force -ErrorAction SilentlyContinue
 
-    Write-Host "[+] Cleaning..." -ForegroundColor Green
+# ======================
+# RECENT FILES
+# ======================
+Remove-Item "$env:APPDATA\Microsoft\Windows\Recent\*" -Force -ErrorAction SilentlyContinue
 
-    Remove-Item "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
-    Remove-Item "C:\Windows\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
-    Remove-Item "C:\Windows\Prefetch\*" -Recurse -Force -ErrorAction SilentlyContinue
-    Remove-Item "$env:APPDATA\Microsoft\Windows\Recent\*" -Force -ErrorAction SilentlyContinue
+# ======================
+# RUN HISTORY
+# ======================
+reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU" /f
 
-    reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU" /f
-    doskey /reinstall
+# ======================
+# CMD HISTORY
+# ======================
+doskey /reinstall
 
-    Remove-Item "$env:APPDATA\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt" -Force -ErrorAction SilentlyContinue
+# ======================
+# PowerShell HISTORY
+# ======================
+Remove-Item "$env:APPDATA\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt" -Force -ErrorAction SilentlyContinue
 
-    Write-Host "[OK] Done" -ForegroundColor Green
-}
-elseif ($select -eq "2") {
+# ======================
+# Explorer HISTORY
+# ======================
+reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\TypedPaths" /f
+reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\RecentDocs" /f
 
-    Remove-Item "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
+# ======================
+# THUMB CACHE
+# ======================
+Remove-Item "$env:LOCALAPPDATA\Microsoft\Windows\Explorer\thumbcache_*" -Force -ErrorAction SilentlyContinue
 
-    Write-Host "[OK] Safe Done" -ForegroundColor Yellow
-}
+# ======================
+# BROWSER CACHE (พื้นฐาน)
+# ======================
+Remove-Item "$env:LOCALAPPDATA\Microsoft\Windows\INetCache\*" -Recurse -Force -ErrorAction SilentlyContinue
+
+Write-Host "[✔] CLEAN COMPLETE" -ForegroundColor Green
+Write-Host "[!] Restart recommended" -ForegroundColor Yellow
+
+pause
