@@ -31,7 +31,7 @@ function Remove-FilesSafe {
     }
 }
 
-# 🔥 FIX Shellbags (ไม่ลบ Desktop)
+# 🔥 Shellbags (ไม่ลบ Desktop)
 function Clear-Shellbags {
 
     Get-ChildItem "HKCU:\Software\Microsoft\Windows\Shell\BagMRU" -ErrorAction SilentlyContinue | ForEach-Object {
@@ -53,6 +53,22 @@ function Clear-Shellbags {
             Remove-Item $_.PSPath -Recurse -Force -ErrorAction SilentlyContinue
         }
     }
+}
+
+# 🔥 Refresh Explorer แบบไม่รี
+function Refresh-Explorer {
+    try {
+        $code = @"
+using System;
+using System.Runtime.InteropServices;
+public class Win32 {
+    [DllImport("shell32.dll")]
+    public static extern void SHChangeNotify(int wEventId, int uFlags, IntPtr dwItem1, IntPtr dwItem2);
+}
+"@
+        Add-Type $code -ErrorAction SilentlyContinue
+        [Win32]::SHChangeNotify(0x8000000, 0x1000, [IntPtr]::Zero, [IntPtr]::Zero)
+    } catch {}
 }
 
 # ================================
@@ -104,8 +120,7 @@ if ($select -eq "1") {
     Remove-FilesSafe "$env:LOCALAPPDATA\Microsoft\Windows\Explorer"
 
     step "Refreshing Explorer..."
-    Stop-Process explorer -Force -ErrorAction SilentlyContinue
-    Start-Process explorer
+    Refresh-Explorer
 
     Write-Host "`n[✔] FULL CLEAN COMPLETE" -ForegroundColor Green
 }
@@ -131,8 +146,8 @@ elseif ($select -eq "2") {
     step "Cleaning Shellbags..."
     Clear-Shellbags
 
-    Stop-Process explorer -Force -ErrorAction SilentlyContinue
-    Start-Process explorer
+    step "Refreshing Explorer..."
+    Refresh-Explorer
 
     Write-Host "`n[✔] JUNK CLEAN COMPLETE" -ForegroundColor Cyan
 }
