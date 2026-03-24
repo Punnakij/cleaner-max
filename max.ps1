@@ -33,7 +33,6 @@ function Remove-FilesSafe {
 
 # 🔥 Shellbags (ไม่ลบ Desktop)
 function Clear-Shellbags {
-
     Get-ChildItem "HKCU:\Software\Microsoft\Windows\Shell\BagMRU" -ErrorAction SilentlyContinue | ForEach-Object {
         Remove-Item $_.PSPath -Recurse -Force -ErrorAction SilentlyContinue
     }
@@ -43,20 +42,18 @@ function Clear-Shellbags {
             Remove-Item $_.PSPath -Recurse -Force -ErrorAction SilentlyContinue
         }
     }
-
-    Get-ChildItem "HKCU:\Software\Microsoft\Windows\ShellNoRoam\BagMRU" -ErrorAction SilentlyContinue | ForEach-Object {
-        Remove-Item $_.PSPath -Recurse -Force -ErrorAction SilentlyContinue
-    }
-
-    Get-ChildItem "HKCU:\Software\Microsoft\Windows\ShellNoRoam\Bags" -ErrorAction SilentlyContinue | ForEach-Object {
-        if ($_.PSChildName -ne "1") {
-            Remove-Item $_.PSPath -Recurse -Force -ErrorAction SilentlyContinue
-        }
-    }
 }
 
-# 🔥 Refresh Explorer แบบไม่รี
-function Refresh-Explorer {
+# 🔥 ไม่ต้องรีคอม (ตัวแก้หลัก)
+function Force-ClearMemory {
+
+    # ปิด process ที่ cache ค้าง
+    Get-Process dllhost -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+    Get-Process rundll32 -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+
+    Start-Sleep -Milliseconds 300
+
+    # refresh explorer โดยไม่รี
     try {
         $code = @"
 using System;
@@ -84,7 +81,7 @@ Write-Host ""
 $select = Read-Host "Select Mode"
 
 # ================================
-# FULL CLEAN
+# FULL CLEAN (ไม่ต้องรีคอมแล้ว)
 # ================================
 if ($select -eq "1") {
 
@@ -100,14 +97,8 @@ if ($select -eq "1") {
     step "Cleaning Recent..."
     Remove-FilesSafe "$env:APPDATA\Microsoft\Windows\Recent"
 
-    step "Cleaning Run History..."
+    step "Cleaning Run..."
     reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU" /f >$null 2>&1
-
-    step "Cleaning CMD History..."
-    doskey /reinstall >$null 2>&1
-
-    step "Cleaning PowerShell History..."
-    Remove-FilesSafe "$env:APPDATA\Microsoft\Windows\PowerShell\PSReadLine"
 
     step "Cleaning Explorer History..."
     reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\TypedPaths" /f >$null 2>&1
@@ -119,10 +110,10 @@ if ($select -eq "1") {
     step "Cleaning Cache..."
     Remove-FilesSafe "$env:LOCALAPPDATA\Microsoft\Windows\Explorer"
 
-    step "Refreshing Explorer..."
-    Refresh-Explorer
+    step "Apply (NO RESTART)..."
+    Force-ClearMemory
 
-    Write-Host "`n[✔] FULL CLEAN COMPLETE" -ForegroundColor Green
+    Write-Host "`n[✔] FULL CLEAN COMPLETE (No Restart Needed)" -ForegroundColor Green
 }
 
 # ================================
@@ -134,22 +125,14 @@ elseif ($select -eq "2") {
 
     step "Cleaning TEMP..."
     Remove-FilesSafe "$env:TEMP"
-    Remove-FilesSafe "C:\Windows\Temp"
-
-    step "Cleaning Prefetch..."
-    Remove-FilesSafe "C:\Windows\Prefetch"
 
     step "Cleaning Cache..."
     Remove-FilesSafe "$env:LOCALAPPDATA\Microsoft\Windows\Explorer"
-    Remove-FilesSafe "$env:LOCALAPPDATA\Microsoft\Windows\INetCache"
 
-    step "Cleaning Shellbags..."
-    Clear-Shellbags
+    step "Apply..."
+    Force-ClearMemory
 
-    step "Refreshing Explorer..."
-    Refresh-Explorer
-
-    Write-Host "`n[✔] JUNK CLEAN COMPLETE" -ForegroundColor Cyan
+    Write-Host "`n[✔] JUNK CLEAN COMPLETE" -ForegroundColor Yellow
 }
 
 # ================================
@@ -163,5 +146,4 @@ else {
     Write-Host "INVALID" -ForegroundColor Red
 }
 
-Write-Host "`nDone. No restart required." -ForegroundColor Magenta
 pause
