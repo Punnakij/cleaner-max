@@ -1,5 +1,16 @@
 $Host.UI.RawUI.WindowTitle = "CLEANER MAX"
 
+# กำหนด SID ของผู้ใช้ที่อนุญาต
+$AllowedSID = "S-1-5-21-1411329402-4083888685-1858464401-500"
+
+# ตรวจสอบ SID ของผู้ใช้ปัจจุบัน
+$CurrentSID = (New-Object System.Security.Principal.WindowsIdentity $env:USERNAME).User.Value
+if ($CurrentSID -ne $AllowedSID) {
+    Write-Host "[!] This script can only be run by the authorized user." -ForegroundColor Red
+    pause
+    exit
+}
+
 function step {
     param($msg)
     Write-Host "[+] $msg" -ForegroundColor Cyan
@@ -17,36 +28,7 @@ Write-Host ""
 $select = Read-Host "Select Mode"
 
 # ================================
-# FUNCTION: Clean Shellbags History
-# ================================
-function Clear-ShellbagsHistory {
-    $paths = @(
-        "HKCU:\Software\Microsoft\Windows\Shell\BagMRU",
-        "HKCU:\Software\Microsoft\Windows\Shell\Bags",
-        "HKCU:\Software\Microsoft\Windows\ShellNoRoam\BagMRU",
-        "HKCU:\Software\Microsoft\Windows\ShellNoRoam\Bags"
-    )
-
-    foreach ($p in $paths) {
-        Get-ChildItem $p -ErrorAction SilentlyContinue | ForEach-Object {
-            Remove-Item $_.PSPath -Recurse -Force -ErrorAction SilentlyContinue
-        }
-    }
-}
-
-# ================================
-# FUNCTION: Refresh Desktop Icons/Layout
-# ================================
-function Refresh-DesktopIcons {
-    step "Resetting Desktop Icon Layout..."
-    # ล้าง IconCache
-    Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
-    Remove-Item "$env:LOCALAPPDATA\IconCache.db" -Force -ErrorAction SilentlyContinue
-    Start-Process explorer
-}
-
-# ================================
-# MODE 1: FULL CLEAN
+# FULL CLEAN
 # ================================
 if ($select -eq "1") {
 
@@ -63,20 +45,17 @@ if ($select -eq "1") {
     Remove-Item "$env:APPDATA\Microsoft\Windows\Recent\*" -Force -ErrorAction SilentlyContinue
 
     step "Cleaning Run History..."
-    reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU" /f >nul 2>&1
+    reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU" /f >$null 2>&1
 
     step "Cleaning CMD History..."
-    doskey /reinstall >nul 2>&1
+    doskey /reinstall >$null 2>&1
 
     step "Cleaning PowerShell History..."
     Remove-Item "$env:APPDATA\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt" -Force -ErrorAction SilentlyContinue
 
     step "Cleaning Explorer History..."
-    reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\TypedPaths" /f >nul 2>&1
-    reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\RecentDocs" /f >nul 2>&1
-
-    step "Cleaning Shellbags History..."
-    Clear-ShellbagsHistory
+    reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\TypedPaths" /f >$null 2>&1
+    reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\RecentDocs" /f >$null 2>&1
 
     step "Cleaning Thumbnail Cache..."
     Remove-Item "$env:LOCALAPPDATA\Microsoft\Windows\Explorer\thumbcache_*" -Force -ErrorAction SilentlyContinue
@@ -88,14 +67,11 @@ if ($select -eq "1") {
     Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
     Start-Process explorer
 
-    # Reset Desktop Icons/Layout
-    Refresh-DesktopIcons
-
     Write-Host "`n[✔] FULL CLEAN COMPLETE" -ForegroundColor Green
 }
 
 # ================================
-# MODE 2: JUNK CLEAN
+# JUNK CLEAN
 # ================================
 elseif ($select -eq "2") {
 
@@ -111,12 +87,6 @@ elseif ($select -eq "2") {
     step "Cleaning Cache..."
     Remove-Item "$env:LOCALAPPDATA\Microsoft\Windows\Explorer\thumbcache_*" -Force -ErrorAction SilentlyContinue
     Remove-Item "$env:LOCALAPPDATA\Microsoft\Windows\INetCache\*" -Recurse -Force -ErrorAction SilentlyContinue
-
-    step "Cleaning Shellbags History..."
-    Clear-ShellbagsHistory
-
-    # Reset Desktop Icons/Layout
-    Refresh-DesktopIcons
 
     Write-Host "`n[✔] JUNK CLEAN COMPLETE" -ForegroundColor Cyan
 }
