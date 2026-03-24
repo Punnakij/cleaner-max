@@ -17,6 +17,35 @@ Write-Host ""
 $select = Read-Host "Select Mode"
 
 # ================================
+# FUNCTION: Clean Shellbags History
+# ================================
+function Clear-ShellbagsHistory {
+    $paths = @(
+        "HKCU:\Software\Microsoft\Windows\Shell\BagMRU",
+        "HKCU:\Software\Microsoft\Windows\Shell\Bags",
+        "HKCU:\Software\Microsoft\Windows\ShellNoRoam\BagMRU",
+        "HKCU:\Software\Microsoft\Windows\ShellNoRoam\Bags"
+    )
+
+    foreach ($p in $paths) {
+        Get-ChildItem $p -ErrorAction SilentlyContinue | ForEach-Object {
+            Remove-Item $_.PSPath -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
+# ================================
+# FUNCTION: Refresh Desktop Icons/Layout
+# ================================
+function Refresh-DesktopIcons {
+    step "Resetting Desktop Icon Layout..."
+    # ล้าง IconCache
+    Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
+    Remove-Item "$env:LOCALAPPDATA\IconCache.db" -Force -ErrorAction SilentlyContinue
+    Start-Process explorer
+}
+
+# ================================
 # MODE 1: FULL CLEAN
 # ================================
 if ($select -eq "1") {
@@ -30,7 +59,7 @@ if ($select -eq "1") {
     step "Cleaning Prefetch..."
     Remove-Item "C:\Windows\Prefetch\*" -Recurse -Force -ErrorAction SilentlyContinue
 
-    step "Cleaning Recent Items..."
+    step "Cleaning Recent..."
     Remove-Item "$env:APPDATA\Microsoft\Windows\Recent\*" -Force -ErrorAction SilentlyContinue
 
     step "Cleaning Run History..."
@@ -47,14 +76,7 @@ if ($select -eq "1") {
     reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\RecentDocs" /f >nul 2>&1
 
     step "Cleaning Shellbags History..."
-    $BagMRUPath = "HKCU:\Software\Microsoft\Windows\Shell\BagMRU"
-    Get-ChildItem $BagMRUPath -ErrorAction SilentlyContinue | ForEach-Object {
-        Remove-Item $_.PSPath -Recurse -Force -ErrorAction SilentlyContinue
-    }
-    $BagsPath = "HKCU:\Software\Microsoft\Windows\Shell\Bags"
-    Get-ChildItem $BagsPath -ErrorAction SilentlyContinue | ForEach-Object {
-        Remove-Item $_.PSPath -Recurse -Force -ErrorAction SilentlyContinue
-    }
+    Clear-ShellbagsHistory
 
     step "Cleaning Thumbnail Cache..."
     Remove-Item "$env:LOCALAPPDATA\Microsoft\Windows\Explorer\thumbcache_*" -Force -ErrorAction SilentlyContinue
@@ -65,6 +87,9 @@ if ($select -eq "1") {
     step "Refreshing Explorer..."
     Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
     Start-Process explorer
+
+    # Reset Desktop Icons/Layout
+    Refresh-DesktopIcons
 
     Write-Host "`n[✔] FULL CLEAN COMPLETE" -ForegroundColor Green
 }
@@ -88,14 +113,10 @@ elseif ($select -eq "2") {
     Remove-Item "$env:LOCALAPPDATA\Microsoft\Windows\INetCache\*" -Recurse -Force -ErrorAction SilentlyContinue
 
     step "Cleaning Shellbags History..."
-    $BagMRUPath = "HKCU:\Software\Microsoft\Windows\Shell\BagMRU"
-    Get-ChildItem $BagMRUPath -ErrorAction SilentlyContinue | ForEach-Object {
-        Remove-Item $_.PSPath -Recurse -Force -ErrorAction SilentlyContinue
-    }
-    $BagsPath = "HKCU:\Software\Microsoft\Windows\Shell\Bags"
-    Get-ChildItem $BagsPath -ErrorAction SilentlyContinue | ForEach-Object {
-        Remove-Item $_.PSPath -Recurse -Force -ErrorAction SilentlyContinue
-    }
+    Clear-ShellbagsHistory
+
+    # Reset Desktop Icons/Layout
+    Refresh-DesktopIcons
 
     Write-Host "`n[✔] JUNK CLEAN COMPLETE" -ForegroundColor Cyan
 }
@@ -108,7 +129,7 @@ elseif ($select -eq "3") {
 }
 
 else {
-    Write-Host "INVALID SELECTION" -ForegroundColor Red
+    Write-Host "INVALID" -ForegroundColor Red
 }
 
 Write-Host "`nDone. No restart required." -ForegroundColor Magenta
