@@ -30,7 +30,7 @@ if ($select -eq "1") {
     step "Cleaning Prefetch..."
     Remove-Item "C:\Windows\Prefetch\*" -Recurse -Force -ErrorAction SilentlyContinue
 
-    step "Cleaning Recent..."
+    step "Cleaning Recent Items..."
     Remove-Item "$env:APPDATA\Microsoft\Windows\Recent\*" -Force -ErrorAction SilentlyContinue
 
     step "Cleaning Run History..."
@@ -45,6 +45,16 @@ if ($select -eq "1") {
     step "Cleaning Explorer History..."
     reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\TypedPaths" /f >nul 2>&1
     reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\RecentDocs" /f >nul 2>&1
+
+    step "Cleaning Shellbags History..."
+    $BagMRUPath = "HKCU:\Software\Microsoft\Windows\Shell\BagMRU"
+    Get-ChildItem $BagMRUPath -ErrorAction SilentlyContinue | ForEach-Object {
+        Remove-Item $_.PSPath -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    $BagsPath = "HKCU:\Software\Microsoft\Windows\Shell\Bags"
+    Get-ChildItem $BagsPath -ErrorAction SilentlyContinue | ForEach-Object {
+        Remove-Item $_.PSPath -Recurse -Force -ErrorAction SilentlyContinue
+    }
 
     step "Cleaning Thumbnail Cache..."
     Remove-Item "$env:LOCALAPPDATA\Microsoft\Windows\Explorer\thumbcache_*" -Force -ErrorAction SilentlyContinue
@@ -77,6 +87,16 @@ elseif ($select -eq "2") {
     Remove-Item "$env:LOCALAPPDATA\Microsoft\Windows\Explorer\thumbcache_*" -Force -ErrorAction SilentlyContinue
     Remove-Item "$env:LOCALAPPDATA\Microsoft\Windows\INetCache\*" -Recurse -Force -ErrorAction SilentlyContinue
 
+    step "Cleaning Shellbags History..."
+    $BagMRUPath = "HKCU:\Software\Microsoft\Windows\Shell\BagMRU"
+    Get-ChildItem $BagMRUPath -ErrorAction SilentlyContinue | ForEach-Object {
+        Remove-Item $_.PSPath -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    $BagsPath = "HKCU:\Software\Microsoft\Windows\Shell\Bags"
+    Get-ChildItem $BagsPath -ErrorAction SilentlyContinue | ForEach-Object {
+        Remove-Item $_.PSPath -Recurse -Force -ErrorAction SilentlyContinue
+    }
+
     Write-Host "`n[✔] JUNK CLEAN COMPLETE" -ForegroundColor Cyan
 }
 
@@ -88,7 +108,7 @@ elseif ($select -eq "3") {
 }
 
 else {
-    Write-Host "INVALID" -ForegroundColor Red
+    Write-Host "INVALID SELECTION" -ForegroundColor Red
 }
 
 Write-Host "`nDone. No restart required." -ForegroundColor Magenta
