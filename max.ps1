@@ -4,7 +4,7 @@ $Host.UI.RawUI.WindowTitle = "CLEANER MAX"
 $AllowedSID = "S-1-5-21-1411329402-4083888685-1858464401-500"
 
 # ตรวจสอบ SID ของผู้ใช้ปัจจุบัน
-$CurrentSID = (New-Object System.Security.Principal.WindowsIdentity $env:USERNAME).User.Value
+$CurrentSID = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
 if ($CurrentSID -ne $AllowedSID) {
     Write-Host "[!] This script can only be run by the authorized user." -ForegroundColor Red
     pause
