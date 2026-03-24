@@ -44,16 +44,31 @@ function Clear-Shellbags {
     }
 }
 
-# 🔥 ไม่ต้องรีคอม (ตัวแก้หลัก)
-function Force-ClearMemory {
+# 💣 Deep Clean (ไม่ต้องรีคอม)
+function Force-ClearMemory-Deep {
 
-    # ปิด process ที่ cache ค้าง
+    Write-Host "[+] Deep Cleaning..." -ForegroundColor Cyan
+
     Get-Process dllhost -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
     Get-Process rundll32 -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+    Get-Process SearchIndexer -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 
-    Start-Sleep -Milliseconds 300
+    Start-Sleep -Milliseconds 500
 
-    # refresh explorer โดยไม่รี
+    # restart explorer แบบปลอดภัย
+    $explorer = Get-Process explorer -ErrorAction SilentlyContinue
+    if ($explorer) {
+        $explorer.CloseMainWindow() | Out-Null
+        Start-Sleep -Milliseconds 500
+        if (!$explorer.HasExited) {
+            $explorer | Stop-Process -Force
+        }
+    }
+    Start-Process explorer
+
+    Start-Sleep -Milliseconds 500
+
+    # refresh shell
     try {
         $code = @"
 using System;
@@ -66,6 +81,10 @@ public class Win32 {
         Add-Type $code -ErrorAction SilentlyContinue
         [Win32]::SHChangeNotify(0x8000000, 0x1000, [IntPtr]::Zero, [IntPtr]::Zero)
     } catch {}
+
+    ipconfig /flushdns > $null 2>&1
+
+    Write-Host "[✔] Done (No Restart Needed)" -ForegroundColor Green
 }
 
 # ================================
@@ -81,7 +100,7 @@ Write-Host ""
 $select = Read-Host "Select Mode"
 
 # ================================
-# FULL CLEAN (ไม่ต้องรีคอมแล้ว)
+# FULL CLEAN
 # ================================
 if ($select -eq "1") {
 
@@ -100,7 +119,7 @@ if ($select -eq "1") {
     step "Cleaning Run..."
     reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU" /f >$null 2>&1
 
-    step "Cleaning Explorer History..."
+    step "Cleaning Explorer..."
     reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\TypedPaths" /f >$null 2>&1
     reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\RecentDocs" /f >$null 2>&1
 
@@ -110,10 +129,10 @@ if ($select -eq "1") {
     step "Cleaning Cache..."
     Remove-FilesSafe "$env:LOCALAPPDATA\Microsoft\Windows\Explorer"
 
-    step "Apply (NO RESTART)..."
-    Force-ClearMemory
+    step "Apply Deep Clean..."
+    Force-ClearMemory-Deep
 
-    Write-Host "`n[✔] FULL CLEAN COMPLETE (No Restart Needed)" -ForegroundColor Green
+    Write-Host "`n[✔] FULL CLEAN COMPLETE" -ForegroundColor Green
 }
 
 # ================================
@@ -130,7 +149,7 @@ elseif ($select -eq "2") {
     Remove-FilesSafe "$env:LOCALAPPDATA\Microsoft\Windows\Explorer"
 
     step "Apply..."
-    Force-ClearMemory
+    Force-ClearMemory-Deep
 
     Write-Host "`n[✔] JUNK CLEAN COMPLETE" -ForegroundColor Yellow
 }
