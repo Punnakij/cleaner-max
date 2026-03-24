@@ -1,24 +1,74 @@
 $Host.UI.RawUI.WindowTitle = "CLEANER MAX"
 
-# กำหนด SID ของผู้ใช้ที่อนุญาต
+# ================================
+# SID LOCK
+# ================================
 $AllowedSID = "S-1-5-21-1411329402-4083888685-1858464401-500"
-
-# ตรวจสอบ SID ของผู้ใช้ปัจจุบัน
 $CurrentSID = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+
 if ($CurrentSID -ne $AllowedSID) {
-    Write-Host "[!] This script can only be run by the authorized user." -ForegroundColor Red
+    Write-Host "[!] กรุณารี HWID เพื่อใช้งานสคริปต์นี้" -ForegroundColor Red
     pause
     exit
 }
 
+# ================================
+# FUNCTIONS
+# ================================
 function step {
     param($msg)
     Write-Host "[+] $msg" -ForegroundColor Cyan
     Start-Sleep -Milliseconds 200
 }
 
-Clear-Host
+# ลบไฟล์แบบช้า (ลด SSD 100%)
+function Remove-FilesSafe {
+    param([string]$Path)
+    if (Test-Path $Path) {
+        Get-ChildItem $Path -Recurse -Force -ErrorAction SilentlyContinue | ForEach-Object {
+            try { Remove-Item $_.FullName -Force -Recurse -ErrorAction SilentlyContinue } catch {}
+            Start-Sleep -Milliseconds 10
+        }
+    }
+}
 
+# ลบ Shellbags (OSForensics)
+function Clear-Shellbags {
+    $paths = @(
+        "HKCU:\Software\Microsoft\Windows\Shell\BagMRU",
+        "HKCU:\Software\Microsoft\Windows\Shell\Bags",
+        "HKCU:\Software\Microsoft\Windows\ShellNoRoam\BagMRU",
+        "HKCU:\Software\Microsoft\Windows\ShellNoRoam\Bags"
+    )
+
+    foreach ($p in $paths) {
+        Get-ChildItem $p -ErrorAction SilentlyContinue | ForEach-Object {
+            Remove-Item $_.PSPath -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
+# สำรองตำแหน่ง Desktop Icon
+function Backup-DesktopLayout {
+    $key = "HKCU\Software\Microsoft\Windows\Shell\Bags\1\Desktop"
+    $file = "$env:TEMP\layout.reg"
+    reg export "$key" "$file" /y >$null 2>&1
+    return $file
+}
+
+# คืนตำแหน่ง Desktop Icon
+function Restore-DesktopLayout {
+    param($file)
+    if (Test-Path $file) {
+        reg import "$file" >$null 2>&1
+        Remove-Item $file -Force
+    }
+}
+
+# ================================
+# MENU
+# ================================
+Clear-Host
 Write-Host "CLEANER MAX" -ForegroundColor Yellow
 Write-Host "[1] FULL CLEAN" -ForegroundColor Green
 Write-Host "[2] JUNK CLEAN" -ForegroundColor Yellow
@@ -34,15 +84,18 @@ if ($select -eq "1") {
 
     Write-Host "`n[ START FULL CLEAN ]" -ForegroundColor Green
 
+    # สำรอง icon layout
+    $layout = Backup-DesktopLayout
+
     step "Cleaning TEMP..."
-    Remove-Item "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
-    Remove-Item "C:\Windows\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-FilesSafe "$env:TEMP"
+    Remove-FilesSafe "C:\Windows\Temp"
 
     step "Cleaning Prefetch..."
-    Remove-Item "C:\Windows\Prefetch\*" -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-FilesSafe "C:\Windows\Prefetch"
 
     step "Cleaning Recent..."
-    Remove-Item "$env:APPDATA\Microsoft\Windows\Recent\*" -Force -ErrorAction SilentlyContinue
+    Remove-FilesSafe "$env:APPDATA\Microsoft\Windows\Recent"
 
     step "Cleaning Run History..."
     reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU" /f >$null 2>&1
@@ -51,14 +104,17 @@ if ($select -eq "1") {
     doskey /reinstall >$null 2>&1
 
     step "Cleaning PowerShell History..."
-    Remove-Item "$env:APPDATA\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt" -Force -ErrorAction SilentlyContinue
+    Remove-FilesSafe "$env:APPDATA\Microsoft\Windows\PowerShell\PSReadLine"
 
     step "Cleaning Explorer History..."
     reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\TypedPaths" /f >$null 2>&1
     reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\RecentDocs" /f >$null 2>&1
 
+    step "Cleaning Shellbags..."
+    Clear-Shellbags
+
     step "Cleaning Thumbnail Cache..."
-    Remove-Item "$env:LOCALAPPDATA\Microsoft\Windows\Explorer\thumbcache_*" -Force -ErrorAction SilentlyContinue
+    Remove-FilesSafe "$env:LOCALAPPDATA\Microsoft\Windows\Explorer"
 
     step "Cleaning Event Logs..."
     try { wevtutil el | ForEach-Object { wevtutil cl "$_" } } catch {}
@@ -66,6 +122,9 @@ if ($select -eq "1") {
     step "Refreshing Explorer..."
     Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
     Start-Process explorer
+
+    # คืน icon layout (แก้สลับมั่ว)
+    Restore-DesktopLayout $layout
 
     Write-Host "`n[✔] FULL CLEAN COMPLETE" -ForegroundColor Green
 }
@@ -77,16 +136,26 @@ elseif ($select -eq "2") {
 
     Write-Host "`n[ START JUNK CLEAN ]" -ForegroundColor Yellow
 
+    $layout = Backup-DesktopLayout
+
     step "Cleaning TEMP..."
-    Remove-Item "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
-    Remove-Item "C:\Windows\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-FilesSafe "$env:TEMP"
+    Remove-FilesSafe "C:\Windows\Temp"
 
     step "Cleaning Prefetch..."
-    Remove-Item "C:\Windows\Prefetch\*" -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-FilesSafe "C:\Windows\Prefetch"
 
     step "Cleaning Cache..."
-    Remove-Item "$env:LOCALAPPDATA\Microsoft\Windows\Explorer\thumbcache_*" -Force -ErrorAction SilentlyContinue
-    Remove-Item "$env:LOCALAPPDATA\Microsoft\Windows\INetCache\*" -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-FilesSafe "$env:LOCALAPPDATA\Microsoft\Windows\Explorer"
+    Remove-FilesSafe "$env:LOCALAPPDATA\Microsoft\Windows\INetCache"
+
+    step "Cleaning Shellbags..."
+    Clear-Shellbags
+
+    Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
+    Start-Process explorer
+
+    Restore-DesktopLayout $layout
 
     Write-Host "`n[✔] JUNK CLEAN COMPLETE" -ForegroundColor Cyan
 }
