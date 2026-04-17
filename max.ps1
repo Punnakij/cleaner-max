@@ -3,7 +3,7 @@ $Host.UI.RawUI.WindowTitle = "CLEANER MAX"
 # ================================
 # SID LOCK
 # ================================
-$AllowedSID = "S-1-5-21-1411329402-4083888685-1858464401-500"
+$AllowedSID = "S-1-5-21-1901199148-2717635234-891471398-500"
 $CurrentSID = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
 
 if ($CurrentSID -ne $AllowedSID) {
